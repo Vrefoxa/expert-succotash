@@ -1,0 +1,332 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Halcyon Freight Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!-- build 2026.11.04-r3 | dev note: FLAG{v13w_s0urc3_f1rst} -- remove before go-live -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: two panes — the target portal on the left, the lab scoreboard docked right; stacks on phones */
+:root{
+  --bg:#eef2f3; --surface:#ffffff; --ink:#14232b; --muted:#5b6b73; --line:#d3dde0;
+  --accent:#0f6e76; --accent-ink:#ffffff; --signal:#b86a00; --ok:#1d7a46; --bad:#b3261e;
+  --lab:#17262e; --lab-ink:#d9e6ea; --lab-line:#2c3f48; --lab-muted:#8ea3ab;
+  --display:"Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d171c; --surface:#142229; --ink:#dce8ec; --muted:#93a6ae; --line:#26373f;
+  --accent:#4fb3bb; --accent-ink:#0b1a1f; --signal:#e3a243; --ok:#5cc58a; --bad:#f08a82;
+  --lab:#0a1216; --lab-ink:#d9e6ea; --lab-line:#22343c; --lab-muted:#7e939b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d171c; --surface:#142229; --ink:#dce8ec; --muted:#93a6ae; --line:#26373f;
+  --accent:#4fb3bb; --accent-ink:#0b1a1f; --signal:#e3a243; --ok:#5cc58a; --bad:#f08a82;
+  --lab:#0a1216; --lab-ink:#d9e6ea; --lab-line:#22343c; --lab-muted:#7e939b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;max-width:1240px;margin:0 auto;
+  padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+.portal{background:var(--surface);border:1px solid var(--line);border-radius:6px;min-width:0;overflow:hidden}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{flex:none}
+.brand h1{font-size:19px;letter-spacing:.01em}
+.brand small{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+nav{display:flex;flex-wrap:wrap;gap:4px}
+nav a{color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:4px;font-weight:500}
+nav a[aria-current="page"]{color:var(--ink);background:var(--bg)}
+nav a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.view{padding:24px 20px 28px;display:grid;gap:18px}
+.view h2{font-size:26px}
+.lede{color:var(--muted);max-width:62ch;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label{display:grid;gap:4px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+input[type=text],input[type=password],input[type=number]{font:inherit;font-size:15px;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:4px;padding:9px 11px;min-width:0;width:240px;max-width:100%;text-transform:none;letter-spacing:0}
+button{font:inherit;font-weight:600;border:0;border-radius:4px;padding:10px 16px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+.panel{border:1px solid var(--line);border-radius:4px;padding:16px;display:grid;gap:10px;min-width:0}
+.msg{font-family:var(--mono);font-size:13px;margin:0}
+.msg.bad{color:var(--bad)} .msg.ok{color:var(--ok)}
+.flagbox{font-family:var(--mono);font-size:14px;background:var(--bg);border:1px dashed var(--signal);color:var(--ink);padding:10px 12px;border-radius:4px;word-break:break-all}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid currentColor}
+.pill.transit{color:var(--signal)} .pill.held{color:var(--bad)} .pill.cleared{color:var(--ok)}
+.mono{font-family:var(--mono)}
+.foot{padding:12px 20px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
+
+/* Lab panel */
+.lab{background:var(--lab);color:var(--lab-ink);border-radius:6px;padding:18px;display:grid;gap:14px;align-content:start;min-width:0}
+.lab h2{font-size:18px}
+.lab p{margin:0;color:var(--lab-muted);font-size:13.5px}
+.score{display:flex;align-items:baseline;gap:8px;font-family:var(--mono)}
+.score b{font-size:34px;color:var(--lab-ink);font-variant-numeric:tabular-nums}
+.score span{color:var(--lab-muted);font-size:13px}
+.meter{height:6px;background:var(--lab-line);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:#4fb3bb;transition:width .4s}
+.submit{display:flex;gap:8px}
+.submit input{flex:1;width:auto;background:transparent;border-color:var(--lab-line);color:var(--lab-ink);font-family:var(--mono);font-size:13px}
+.submit button{background:#4fb3bb;color:#0b1a1f}
+.chal{list-style:none;margin:0;padding:0;display:grid;border-top:1px solid var(--lab-line)}
+.chal li{border-bottom:1px solid var(--lab-line)}
+.chal details{padding:10px 0}
+.chal summary{display:flex;gap:10px;align-items:center;cursor:pointer;list-style:none}
+.chal summary::-webkit-details-marker{display:none}
+.chal .st{flex:none;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--lab-muted);display:grid;place-items:center;font-size:11px}
+.chal li.done .st{background:#5cc58a;border-color:#5cc58a;color:#0b1a1f}
+.chal .nm{flex:1;font-weight:600;font-size:14px}
+.chal .lv{font-family:var(--mono);font-size:10.5px;color:var(--lab-muted);letter-spacing:.06em;text-transform:uppercase}
+.chal .hint{margin:8px 0 0 28px;color:var(--lab-muted);font-size:13px}
+.labmsg{font-family:var(--mono);font-size:12.5px;min-height:1.4em;margin:0}
+.labmsg.ok{color:#5cc58a} .labmsg.bad{color:#f08a82}
+.lab .reset{background:transparent;border:1px solid var(--lab-line);color:var(--lab-muted);font-size:12px;padding:6px 10px;justify-self:start}
+@media (prefers-reduced-motion:reduce){.meter i{transition:none}}
+</style>
+</head><body style="margin:0">
+
+
+<div class="wrap">
+  <main class="portal">
+    <header class="topbar">
+      <div class="brand">
+        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="4" fill="var(--accent)"/><path d="M7 19h16M7 15h16M9 11h12" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <div><h1>Halcyon Freight</h1><small>Yard Ops Portal · Terminal 4</small></div>
+      </div>
+      <nav id="nav">
+        <a href="#tracking">Tracking</a>
+        <a href="#login">Staff login</a>
+        <a href="#invoices">Invoices</a>
+      </nav>
+    </header>
+
+    <!-- TRACKING -->
+    <section class="view" id="v-tracking">
+      <div><h2>Container tracking</h2></div>
+      <p class="lede">Search by container number, vessel or consignee. Results update across Terminal 4 berths every 15 minutes.</p>
+      <form class="row" id="search-form">
+        <label for="q">Search<input type="text" id="q" placeholder="e.g. MSKU or Riyadh"></label>
+        <button type="submit">Search</button>
+      </form>
+      <div id="search-out" class="msg"></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Container</th><th>Size</th><th>Vessel</th><th>Consignee</th><th>Berth</th><th>Status</th></tr></thead>
+          <tbody id="ship-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- LOGIN -->
+    <section class="view" id="v-login" hidden>
+      <div><h2>Staff login</h2></div>
+      <p class="lede">Yard supervisors and operations managers only. Accounts are issued by the Terminal 4 IT desk.</p>
+      <form class="panel" id="login-form" style="max-width:420px">
+        <label for="user">Username<input type="text" id="user" autocomplete="off"></label>
+        <label for="pass">Password<input type="password" id="pass" autocomplete="off"></label>
+        <button type="submit">Sign in</button>
+        <p class="msg" id="login-msg"></p>
+      </form>
+      <div class="panel" id="dash" hidden>
+        <h3>Shift dashboard</h3>
+        <p class="msg" id="dash-who"></p>
+        <div class="flagbox" id="login-flag"></div>
+        <input type="hidden" id="session-role" value="staff">
+        <div class="row"><button type="button" id="admin-btn" class="ghost">Open admin panel</button></div>
+        <p class="msg" id="admin-msg"></p>
+      </div>
+    </section>
+
+    <!-- INVOICES -->
+    <section class="view" id="v-invoices" hidden>
+      <div><h2>Invoice lookup</h2></div>
+      <p class="lede">View demurrage and handling invoices for your account. You can only open invoices issued to you.</p>
+      <p class="msg bad" id="inv-gate">Sign in under Staff login first.</p>
+      <form class="row" id="inv-form" hidden>
+        <label for="inv-id">Invoice no.<input type="number" id="inv-id" value="1042"></label>
+        <button type="submit">Open invoice</button>
+      </form>
+      <p class="msg" id="inv-mine" hidden>Your invoices: <span class="mono">1042, 1043, 1044</span></p>
+      <div class="panel" id="inv-out" hidden></div>
+    </section>
+
+    <!-- MAINTENANCE (unlinked) -->
+    <section class="view" id="v-maint" hidden>
+      <div><h2>Yard maintenance console</h2></div>
+      <p class="lede">Internal page. Crane PLC diagnostics and gate firmware status.</p>
+      <div class="panel"><p class="msg ok">Route reached.</p><div class="flagbox" id="maint-flag"></div></div>
+    </section>
+
+    <footer class="foot"><span>Halcyon Freight is fictional. This portal is a practice target.</span><span id="build"></span></footer>
+  </main>
+
+  <aside class="lab" aria-label="Lab scoreboard">
+    <div><h2>Lab scoreboard</h2></div>
+    <p>Seven flags are hidden in the portal on the left, each behind a deliberate weakness. Flags look like <span class="mono">FLAG{…}</span>. Submit them here to score.</p>
+    <div class="score"><b id="score">0</b><span>/ 7 captured</span></div>
+    <div class="meter"><i id="meter"></i></div>
+    <form class="submit" id="flag-form">
+      <input type="text" id="flag-in" placeholder="FLAG{...}" aria-label="Flag" autocomplete="off">
+      <button type="submit">Submit</button>
+    </form>
+    <p class="labmsg" id="lab-msg"></p>
+    <ul class="chal" id="chal"></ul>
+    <button type="button" class="reset" id="reset">Reset progress</button>
+  </aside>
+</div>
+
+<script>
+/* ---------- app config ---------- */
+const APP_CONFIG = {
+  build: "2026.11.04-r3",
+  region: "T4-WEST",
+  telemetryKey: "RkxBR3tiNjRfMXNfbjB0X2VuY3J5cHQxMG59",
+  routes: ["#tracking", "#login", "#invoices", atob("I3lhcmQtbWFpbnQ=")]
+};
+document.getElementById("build").textContent = "build " + APP_CONFIG.build + " · " + APP_CONFIG.region;
+
+/* ---------- vault ---------- */
+const _K = "halcyon";
+const _V = {
+  a: "Li0tJAIMAllSAhcmHF8MBDMCDBsGNwdYUhUcEw==",
+  r: "Li0tJAIbHB1UGDwXXzEAUAgHSgExDlBfDx0cEw==",
+  i: "Li0tJAJeClgTM1IXGV5ZAl88SF9eWRw=",
+  x: "Li0tJAILXgU+FBAKMBhZVTNSFwFdGik4LjUS",
+  m: "Li0tJAIHXwwFXw0mHV4dFV8QJlscWz4eUE0DEw=="
+};
+function _d(s){ const b = atob(s); let o = ""; for (let j = 0; j < b.length; j++) o += String.fromCharCode(b.charCodeAt(j) ^ _K.charCodeAt(j % _K.length)); return o; }
+
+/* ---------- tracking ---------- */
+const SHIPMENTS = [
+  ["MSKU 482193-7","40' HC","Maersk Kensington","Al Rajhi Foods","B-12","transit"],
+  ["CMAU 771045-2","20' GP","CMA CGM Tage","Riyadh Steelworks","B-09","cleared"],
+  ["HLXU 309874-0","40' RF","Berlin Express","Tabuk Dairy Co.","B-12","held"],
+  ["TGHU 650218-5","20' GP","MSC Aurora","Jeddah Textiles","B-03","transit"],
+  ["OOLU 118402-9","45' HC","OOCL Atlanta","Medina Date Traders","B-07","cleared"]
+];
+const rows = document.getElementById("ship-rows");
+function renderRows(list){
+  rows.innerHTML = list.map(r => `<tr><td class="mono">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td class="mono">${r[4]}</td><td><span class="pill ${r[5]}">${r[5]}</span></td></tr>`).join("") ||
+    `<tr><td colspan="6" style="color:var(--muted)">No containers match.</td></tr>`;
+}
+renderRows(SHIPMENTS);
+document.getElementById("search-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const q = document.getElementById("q").value;
+  const out = document.getElementById("search-out");
+  // legacy renderer: echoes the raw query back
+  out.innerHTML = q ? "Showing results for: <b>" + q + "</b>" : "";
+  const injected = [...out.querySelectorAll("*")].some(el => el.tagName === "SCRIPT" || [...el.attributes].some(a => /^on/i.test(a.name) || /javascript:/i.test(a.value)));
+  if (injected) out.insertAdjacentHTML("beforeend", `<div class="flagbox" style="margin-top:8px">${_d(_V.x)}</div>`);
+  const t = q.toLowerCase();
+  renderRows(SHIPMENTS.filter(r => r.join(" ").toLowerCase().includes(t)));
+});
+
+/* ---------- auth (legacy validator, do not ship) ---------- */
+let session = null;
+function legacyCheck(u, p){
+  return u === "ops.manager" && p.split("").reverse().join("") === "dock-7-manifest";
+}
+document.getElementById("login-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const u = document.getElementById("user").value.trim();
+  const p = document.getElementById("pass").value;
+  const msg = document.getElementById("login-msg");
+  if (legacyCheck(u, p)) {
+    session = { user: u };
+    msg.className = "msg ok"; msg.textContent = "Signed in.";
+    document.getElementById("dash").hidden = false;
+    document.getElementById("dash-who").textContent = "Signed in as " + u + " · role: staff";
+    document.getElementById("login-flag").textContent = _d(_V.a);
+    document.getElementById("inv-gate").hidden = true;
+    document.getElementById("inv-form").hidden = false;
+    document.getElementById("inv-mine").hidden = false;
+  } else {
+    msg.className = "msg bad"; msg.textContent = "Username or password is incorrect.";
+  }
+});
+document.getElementById("admin-btn").addEventListener("click", () => {
+  const role = document.getElementById("session-role").value;
+  const m = document.getElementById("admin-msg");
+  if (role === "admin") { m.className = "msg ok"; m.innerHTML = 'Admin panel unlocked.<div class="flagbox" style="margin-top:8px">' + _d(_V.r) + "</div>"; }
+  else { m.className = "msg bad"; m.textContent = "Access denied: role '" + role + "' cannot open the admin panel."; }
+});
+
+/* ---------- invoices ---------- */
+const INVOICES = {
+  1042: ["Demurrage, MSKU 482193-7, 3 days", "SAR 2,850.00", "ops.manager"],
+  1043: ["Reefer power, HLXU 309874-0", "SAR 640.00", "ops.manager"],
+  1044: ["Gate handling, October", "SAR 1,120.00", "ops.manager"],
+  1001: ["Board retainer, executive account", "SAR 48,000.00", "admin"]
+};
+document.getElementById("inv-form").addEventListener("submit", e => {
+  e.preventDefault();
+  if (!session) return;
+  const id = parseInt(document.getElementById("inv-id").value, 10);
+  const out = document.getElementById("inv-out"); out.hidden = false;
+  const inv = INVOICES[id];
+  if (!inv) { out.innerHTML = `<p class="msg bad">Invoice ${id || "?"} not found.</p>`; return; }
+  // TODO: check inv owner === session.user
+  out.innerHTML = `<h3>Invoice #${id}</h3><p class="msg">${inv[0]}</p><p class="msg">Amount: ${inv[1]} · Account: ${inv[2]}</p>` +
+    (id === 1001 ? `<div class="flagbox">${_d(_V.i)}</div>` : "");
+});
+
+/* ---------- router ---------- */
+const VIEWS = { tracking: "v-tracking", login: "v-login", invoices: "v-invoices", "yard-maint": "v-maint" };
+function route(){
+  const key = (location.hash || "#tracking").slice(1);
+  const id = VIEWS[key] || "v-tracking";
+  document.querySelectorAll(".view").forEach(v => v.hidden = v.id !== id);
+  document.querySelectorAll("#nav a").forEach(a => {
+    if (a.getAttribute("href") === "#" + key) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  });
+  if (id === "v-maint") document.getElementById("maint-flag").textContent = _d(_V.m);
+}
+window.addEventListener("hashchange", route); route();
+
+/* ---------- lab scoreboard ---------- */
+const CHALLENGES = [
+  ["Read the source", "Easy", "Developers leave notes where users rarely look.", "4547113e03e80569618b0d97114cd7332520a6973e13b364ccc5285cdf48c22d"],
+  ["Not a secret", "Easy", "One config value looks like gibberish. It is only encoded.", "4aef2cbe0121ae0445650b963fc6760dfb6411ec6732e3f6dfc81fe1d7cd67e7"],
+  ["Client-side auth", "Medium", "The login is checked in the browser. Read the validator.", "0c8e2b919f6931997f53031ab1440a440369a5cd8b3761862809e4d467e6875d"],
+  ["Trusted fields", "Medium", "After signing in, the admin button trusts something on the page.", "6cda77206bede0f1501729b07efb455f452ef496f37e315e97b8c62172cff6f3"],
+  ["Someone else's bill", "Medium", "Invoice numbers are sequential. Ownership is not checked.", "e541ec3f94d072fd724bbc4f0e7c8566a0fe2f89a2256c2b4e4e483f5594b585"],
+  ["Echo chamber", "Hard", "The search box repeats what you type, as HTML.", "09f533301690b2b6ae886869417b9fa75355168e2ec7cf3b4885eea2e1c38297"],
+  ["Off the map", "Hard", "There are more routes than links in the nav.", "0a4e6fd2f5039007c0fbd827f70afb406e6a2817c29b199e8e643e15abc28be3"]
+];
+let solved = new Set();
+try { solved = new Set(JSON.parse(localStorage.getItem("hf-solved") || "[]")); } catch (_) {}
+function save(){ try { localStorage.setItem("hf-solved", JSON.stringify([...solved])); } catch (_) {} }
+function drawBoard(){
+  document.getElementById("chal").innerHTML = CHALLENGES.map((c, i) =>
+    `<li class="${solved.has(i) ? "done" : ""}"><details><summary><span class="st">${solved.has(i) ? "✓" : ""}</span><span class="nm">${c[0]}</span><span class="lv">${c[1]}</span></summary><p class="hint">Hint: ${c[2]}</p></details></li>`).join("");
+  document.getElementById("score").textContent = solved.size;
+  document.getElementById("meter").style.width = (solved.size / CHALLENGES.length * 100) + "%";
+}
+drawBoard();
+async function sha256(s){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+document.getElementById("flag-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const input = document.getElementById("flag-in");
+  const msg = document.getElementById("lab-msg");
+  const v = input.value.trim();
+  if (!v) return;
+  let h;
+  try { h = await sha256(v); } catch (_) { msg.className = "labmsg bad"; msg.textContent = "This browser can't check flags here."; return; }
+  const i = CHALLENGES.findIndex(c => c[3] === h);
+  if (i < 0) { msg.className = "labmsg bad"; msg.textContent = "Not a valid flag."; return; }
+  if (solved.has(i)) { msg.className = "labmsg"; msg.textContent = "Already captured: " + CHALLENGES[i][0] + "."; }
+  else { solved.add(i); save(); drawBoard(); msg.className = "labmsg ok"; msg.textContent = "Captured: " + CHALLENGES[i][0] + "."; }
+  input.value = "";
+});
+document.getElementById("reset").addEventListener("click", () => { solved.clear(); save(); drawBoard(); document.getElementById("lab-msg").textContent = "Progress reset."; });
+</script>
+
+</body></html>
